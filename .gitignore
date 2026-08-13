@@ -1,0 +1,23 @@
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# virtual environment
+.venv/
+
+# environment / secrets
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# temporary uploaded files
+uploads/
+
+# generated reports
+reports/*.pdf
