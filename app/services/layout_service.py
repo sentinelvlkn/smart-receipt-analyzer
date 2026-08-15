@@ -16,6 +16,13 @@ class TextRegion:
 
     words: tuple[OCRWord, ...]
 
+@dataclass(frozen=True, slots=True)
+class VisualRow:
+    page_number: int
+    regions: tuple[TextRegion, ...]
+
+    top: int
+    bottom: int
 
 class LayoutService:
     def __init__(
@@ -185,4 +192,98 @@ class LayoutService:
             right=right,
             bottom=bottom,
             words=tuple(words),
+        )
+
+    def build_rows(
+        self,
+        regions: list[TextRegion],
+    ) -> list[VisualRow]:
+        if not regions:
+            return []
+
+        sorted_regions = sorted(
+            regions,
+            key=lambda region: (
+                self._vertical_center(region),
+                region.left,
+            ),
+        )
+
+        rows: list[list[TextRegion]] = []
+
+        for region in sorted_regions:
+            if not rows:
+                rows.append([region])
+                continue
+
+            current_row = rows[-1]
+
+            if self._belongs_to_same_row(
+                region,
+                current_row,
+            ):
+                current_row.append(region)
+            else:
+                rows.append([region])
+
+        return [
+            self._create_visual_row(row_regions)
+            for row_regions in rows
+        ]
+
+    @staticmethod
+    def _vertical_center(region: TextRegion) -> float:
+        return (region.top + region.bottom) / 2
+
+
+    def _belongs_to_same_row(
+        self,
+        region: TextRegion,
+        row_regions: list[TextRegion],
+        ) -> bool:
+        row_top = min(
+            item.top for item in row_regions
+        )
+
+        row_bottom = max(
+            item.bottom for item in row_regions
+        )
+
+        row_center = (row_top + row_bottom) / 2
+        region_center = self._vertical_center(region)
+
+        row_height = row_bottom - row_top
+        region_height = region.bottom - region.top
+
+        allowed_distance = max(
+            row_height,
+            region_height,
+        ) * 0.6
+
+        return (
+            abs(region_center - row_center)
+            <= allowed_distance
+        )
+
+
+    @staticmethod
+    def _create_visual_row(
+        regions: list[TextRegion],
+    ) -> VisualRow:
+        ordered_regions = sorted(
+            regions,
+            key=lambda region: region.left,
+        )
+
+        return VisualRow(
+            page_number=ordered_regions[0].page_number,
+            regions=tuple(ordered_regions),
+            top=min(
+                region.top
+                for region in ordered_regions
+            ),
+            bottom=max(
+                region.bottom
+                for region in ordered_regions
+            ),
         )
