@@ -1,4 +1,4 @@
-from app.services.layout_service import LayoutService
+from app.services.layout_service import LayoutService, TextRegion
 from app.services.ocr_service import OCRPage, OCRWord
 
 
@@ -51,3 +51,95 @@ def test_large_horizontal_gaps_create_separate_regions():
     assert "Black Mesa Research" in texts
     assert "гр. София" in texts
     assert "Велика Банка" in texts
+
+from app.services.layout_service import (
+    LayoutService,
+    TextRegion,
+)
+
+
+def test_regions_with_small_vertical_offset_form_same_row():
+    regions = [
+        TextRegion(
+            page_number=1,
+            text="USB-H7 USB-C Hub",
+            left=100,
+            top=500,
+            right=600,
+            bottom=530,
+            words=(),
+        ),
+        TextRegion(
+            page_number=1,
+            text="2",
+            left=1000,
+            top=500,
+            right=1020,
+            bottom=530,
+            words=(),
+        ),
+        TextRegion(
+            page_number=1,
+            text="pcs",
+            left=1100,
+            top=505,
+            right=1160,
+            bottom=535,
+            words=(),
+        ),
+        TextRegion(
+            page_number=1,
+            text="€18.90",
+            left=1300,
+            top=500,
+            right=1400,
+            bottom=530,
+            words=(),
+        ),
+    ]
+
+    service = LayoutService()
+
+    rows = service.build_rows(regions)
+
+    assert len(rows) == 1
+
+    texts = [
+        region.text
+        for region in rows[0].regions
+    ]
+
+    assert texts == [
+        "USB-H7 USB-C Hub",
+        "2",
+        "pcs",
+        "€18.90",
+    ]
+
+def test_regions_far_apart_vertically_form_different_rows():
+    regions = [
+        TextRegion(
+            page_number=1,
+            text="Laptop",
+            left=100,
+            top=500,
+            right=300,
+            bottom=530,
+            words=(),
+        ),
+        TextRegion(
+            page_number=1,
+            text="Printer",
+            left=100,
+            top=570,
+            right=300,
+            bottom=600,
+            words=(),
+        ),
+    ]
+
+    service = LayoutService()
+
+    rows = service.build_rows(regions)
+
+    assert len(rows) == 2
