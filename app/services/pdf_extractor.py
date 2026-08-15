@@ -36,7 +36,7 @@ class PDFExtractor:
                 page_count = document.page_count
 
         except Exception as exc:
-            raise RunTimeError(
+            raise RuntimeError(
                 f"Could not process PDF file: {path}"
             ) from exc
 
