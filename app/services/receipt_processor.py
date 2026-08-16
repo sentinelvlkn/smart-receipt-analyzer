@@ -50,12 +50,11 @@ class ReceiptProcessor:
     def process(
         self,
         pdf_path: str | Path,
+        source_filename: str | None = None,
     ) -> ReceiptProcessingResult:
         path = Path(pdf_path)
 
-        document = self.document_extractor.extract(
-            path
-        )
+        document = self.document_extractor.extract(path)
 
         llm_result = self.llm_service.analyze_invoice(
             document.text
@@ -73,7 +72,7 @@ class ReceiptProcessor:
 
         receipt_id = self.repository.save(
             result=processing_result,
-            source_filename=path.name,
+            source_filename=source_filename or path.name,
         )
 
         return ReceiptProcessingResult(
