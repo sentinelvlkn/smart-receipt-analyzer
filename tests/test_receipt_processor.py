@@ -16,9 +16,17 @@ from app.services.document_text_extractor import (
 from app.services.invoice_mapper import InvoiceMapper
 from app.services.llm_service import LLMResult, LLMService
 from app.services.receipt_processor import ReceiptProcessor
-
+from app.services.pdf_report_service import PDFReportService
 
 repository = Mock()
+
+pdf_report_service = Mock(
+    spec=PDFReportService
+)
+
+pdf_report_service.generate.return_value = (
+    Path("reports/receipt_123.pdf")
+)
 
 def test_process_runs_full_pipeline():
 
@@ -113,6 +121,7 @@ def test_process_runs_full_pipeline():
         document_extractor=document_extractor,
         llm_service=llm_service,
         invoice_mapper=invoice_mapper,
+        pdf_report_service=pdf_report_service,
     )
 
     result = processor.process("invoice.pdf")
@@ -141,4 +150,16 @@ def test_process_runs_full_pipeline():
 
     invoice_mapper.map.assert_called_once_with(
         extraction
+    )
+
+    pdf_report_service.generate.assert_called_once_with(
+        invoice=invoice,
+        expense_summary=(
+            llm_result.parsed.expense_summary
+        ),
+        receipt_id=123,
+    )
+
+    assert result.report_path == Path(
+        "reports/receipt_123.pdf"
     )

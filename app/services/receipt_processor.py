@@ -9,7 +9,7 @@ from app.services.document_text_extractor import (
 )
 from app.services.invoice_mapper import InvoiceMapper
 from app.services.llm_service import LLMResult, LLMService
-
+from app.services.pdf_report_service import PDFReportService
 
 class ReceiptRepositoryProtocol(Protocol):
     def save(
@@ -26,6 +26,7 @@ class ReceiptProcessingResult:
     llm: LLMResult
     invoice: Invoice
     receipt_id: int | None = None
+    report_path: Path | None = None
 
 
 class ReceiptProcessor:
@@ -35,16 +36,24 @@ class ReceiptProcessor:
         document_extractor: DocumentTextExtractor | None = None,
         llm_service: LLMService | None = None,
         invoice_mapper: InvoiceMapper | None = None,
+        pdf_report_service: PDFReportService | None = None,
     ) -> None:
         self.repository = repository
         self.document_extractor = (
-            document_extractor or DocumentTextExtractor()
+            document_extractor
+            or DocumentTextExtractor()
         )
         self.llm_service = (
-            llm_service or LLMService()
+            llm_service
+            or LLMService()
         )
         self.invoice_mapper = (
-            invoice_mapper or InvoiceMapper()
+            invoice_mapper
+            or InvoiceMapper()
+        )
+        self.pdf_report_service = (
+            pdf_report_service
+            or PDFReportService()
         )
 
     def process(
@@ -75,9 +84,18 @@ class ReceiptProcessor:
             source_filename=source_filename or path.name,
         )
 
+        report_path = self.pdf_report_service.generate(
+            invoice=invoice,
+            expense_summary=(
+                llm_result.parsed.expense_summary
+            ),
+            receipt_id=receipt_id,
+        )
+
         return ReceiptProcessingResult(
             document=document,
             llm=llm_result,
             invoice=invoice,
             receipt_id=receipt_id,
+            report_path=report_path,
         )

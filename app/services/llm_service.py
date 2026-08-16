@@ -40,6 +40,10 @@ Rules:
 
 - The expense summary must be brief, mention the main expense
   categories, and include the invoice total.
+
+- For each line item, description must contain only the item/product
+  description. Do not include quantity, unit price, amount, row number,
+  or currency in description.
 """
 
 
