@@ -41,7 +41,7 @@ The app is containerized with Docker Compose and utilizes FastAPI.
 
 ## Architecture
 
-
+![Smart Receipt Analyzer architecture](assets/smart_receipt_analyzer_architecture.png)
 
 ## Setup
 
