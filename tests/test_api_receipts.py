@@ -13,6 +13,7 @@ from app.db.models import ReceiptItemORM, ReceiptORM
 from app.main import app
 from app.services.receipt_processor import ReceiptProcessor
 from app.repositories.receipt_repository import ReceiptRepository
+from app.services.invoice_mapper import InvoiceMappingError
 
 @pytest.fixture
 def client():
@@ -228,3 +229,44 @@ def test_process_receipt_rejects_non_pdf(
     }
 
     processor.process.assert_not_called()
+
+def test_process_receipt_returns_422_for_invalid_invoice(
+    client: TestClient,
+):
+    processor = Mock(spec=ReceiptProcessor)
+    repository = Mock(spec=ReceiptRepository)
+
+    processor.process.side_effect = InvoiceMappingError(
+        "Required field is missing: issuer.identifier"
+    )
+
+    app.dependency_overrides[
+        get_receipt_processor
+    ] = lambda: processor
+
+    app.dependency_overrides[
+        get_receipt_repository
+    ] = lambda: repository
+
+    response = client.post(
+        "/receipts",
+        files={
+            "file": (
+                "invoice.pdf",
+                b"%PDF-1.4 fake test content",
+                "application/pdf",
+            )
+        },
+    )
+
+    assert response.status_code == 422
+
+    assert response.json() == {
+        "detail": (
+            "Required field is missing: "
+            "issuer.identifier"
+        )
+    }
+
+    processor.process.assert_called_once()
+    repository.get_by_id.assert_not_called()

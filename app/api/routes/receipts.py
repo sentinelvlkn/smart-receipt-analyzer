@@ -1,3 +1,4 @@
+import logging
 import shutil
 from pathlib import Path
 from typing import Annotated
@@ -20,12 +21,12 @@ from app.api.schemas import (
     ReceiptResponse,
     receipt_to_response,
 )
-from app.repositories.receipt_repository import (
-    ReceiptRepository,
-)
-from app.services.receipt_processor import (
-    ReceiptProcessor,
-)
+from app.repositories.receipt_repository import ReceiptRepository
+from app.services.invoice_mapper import InvoiceMappingError
+from app.services.receipt_processor import ReceiptProcessor
+
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(
@@ -96,10 +97,27 @@ def process_receipt(
 
         return receipt_to_response(receipt)
 
+    except InvoiceMappingError as exc:
+        logger.warning(
+            "Invoice validation failed for file %s: %s",
+            original_filename,
+            exc,
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
     except HTTPException:
         raise
 
     except Exception as exc:
+        logger.exception(
+            "Receipt processing failed for file: %s",
+            original_filename,
+        )
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Receipt processing failed.",
