@@ -44,7 +44,7 @@ class OCRService:
     def __init__(
         self,
         languages: str = "bul+eng",
-        dpi: int = 300,
+        dpi: int = 450,
     ) -> None:
         self.languages = languages
         self.dpi = dpi
@@ -82,6 +82,7 @@ class OCRService:
                         data = pytesseract.image_to_data(
                             image,
                             lang=self.languages,
+                            config="--psm 4",
                             output_type=Output.DICT,
                         )
 

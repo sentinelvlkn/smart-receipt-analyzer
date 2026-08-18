@@ -88,6 +88,7 @@ def test_missing_required_field_raises_mapping_error():
         mapper.map(extraction)
 
 
+
 def test_invalid_decimal_raises_mapping_error():
     mapper = InvoiceMapper()
 
@@ -96,7 +97,7 @@ def test_invalid_decimal_raises_mapping_error():
 
     with pytest.raises(
         InvoiceMappingError,
-        match="item.quantity",
+        match=r"items\[1\]\.quantity",
     ):
         mapper.map(extraction)
 

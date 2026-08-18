@@ -2,7 +2,10 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from app.models.invoice import Invoice, LineItem, Party
-from app.models.invoice_extraction import InvoiceExtraction
+from app.models.invoice_extraction import (
+    ExtractedLineItem,
+    InvoiceExtraction,
+)
 
 
 class InvoiceMappingError(ValueError):
@@ -43,8 +46,14 @@ class InvoiceMapper:
                 ),
             ),
             items=[
-                self._map_item(item)
-                for item in extraction.items
+                self._map_item(
+                    item,
+                    index=index,
+                )
+                for index, item in enumerate(
+                    extraction.items,
+                    start=1,
+                )
             ],
             total_amount=self._parse_decimal(
                 extraction.total_amount,
@@ -56,22 +65,28 @@ class InvoiceMapper:
             ),
         )
 
-    def _map_item(self, item) -> LineItem:
+    def _map_item(
+        self,
+        item: ExtractedLineItem,
+        index: int,
+    ) -> LineItem:
         return LineItem(
             description=item.description,
-            corrected_description=item.corrected_description,
+            corrected_description=(
+                item.corrected_description
+            ),
             category=item.category,
             quantity=self._parse_decimal(
                 item.quantity,
-                "item.quantity",
+                f"items[{index}].quantity",
             ),
             unit_price=self._parse_decimal(
                 item.unit_price,
-                "item.unit_price",
+                f"items[{index}].unit_price",
             ),
             amount=self._parse_decimal(
                 item.amount,
-                "item.amount",
+                f"items[{index}].amount",
             ),
         )
 
